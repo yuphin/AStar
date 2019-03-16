@@ -13,6 +13,7 @@ class Node:
         self.deleted = 0
         self.emptyCoord = emptyCoord
         self.g = g
+        self.parent = None
         self.pathCost = calculateH(self.state, outDict) + self.g
 
     def __eq__(self, other):
@@ -113,7 +114,7 @@ def A_star(initNode):
         if node.deleted:
             continue
         if node.pathCost == node.g:
-            print(node.state,iter)
+            printStates(node)
             return
         explored[node.state] = 1
         for action in generateActions(node.emptyCoord):
@@ -122,14 +123,69 @@ def A_star(initNode):
             if not (frontierRef or stateInExplored(child.state, explored)):
                 heapq.heappush(frontier, child)
                 frontierDict[child.state] = child
+                child.parent = node
             elif frontierRef and frontierRef.pathCost > child.pathCost:
                 frontierRef.deleted = 1
                 heapq.heappush(frontier,child)
+                child.parent = node
                 frontierDict[child.state] = child
-    print("nope",iter)
+    return 'fail'
 
-    return None
+def fLimitedDFS(node,limit):
+    if node.pathCost == node.g:
+        return (0,node)
+    elif node.pathCost > limit:
+        return (1,node.pathCost)
+    else:
+        cutoff = 0
+        for action in generateActions(node.emptyCoord):
+            child = applyAction(node,action)
+            child.parent = node
+            result = fLimitedDFS(child,limit)
+            if result[0]:
+                cutoff = result[1]
+            elif result != 'fail':
+                return result
+        if cutoff:
+            return (1,cutoff)
+        else:
+            return 'fail'
+def IDA_star(node):
+    limit = node.pathCost
+    #print("Calling dfs with ", limit)
+    while True:
+        result = fLimitedDFS(node,limit)
+        if result == 'fail':
+            return 'fail'
+        elif result[0] ==0:
+            printStates(result[1],True)
+            return
+        else:
+            limit = result[1]
+            #print("Calling dfs with ",limit)
+def printState(state,f):
+    for i in range(3):
+        for j in range(3):
+            if j != 2:
+                f.write("%d " % state[i*3+j])
+            else:
+                f.write("%d" % state[i*3+j])
+        f.write('\n')
+    f.write('\n')
 
+def printStates(node,idastar = False):
+    lst = []
+    f = None
+    if idastar:
+        f = open("outputA.txt", "w+")
+    else:
+        f = open("outputIDA.txt", "w+")
+    while node.parent:
+        lst.append(node.state)
+        node = node.parent
+    for state in reversed(lst):
+        printState(state,f)
+    f.close()
 
 def main():
     global outDict
@@ -137,7 +193,11 @@ def main():
     input,output,emptyCoord = readFile(outDict)
     A_star(Node(input, emptyCoord, 0))
     stop = timeit.default_timer()
-    print('Time: ', stop - start)
+    print('A* Time: ', stop - start)
+    start = timeit.default_timer()
+    IDA_star(Node(input, emptyCoord, 0))
+    stop = timeit.default_timer()
+    print('IDA* Time: ', stop - start)
 
 if __name__ == '__main__':
     main()
