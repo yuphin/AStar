@@ -131,35 +131,41 @@ def A_star(initNode):
                 frontierDict[child.state] = child
     return 'fail'
 
-def fLimitedDFS(node,limit):
+def fLimitedDFS(node,limit,path):
     if node.pathCost == node.g:
         return (0,node)
     elif node.pathCost > limit:
         return (1,node.pathCost)
     else:
-        cutoff = 0
+        cutoff = 9999999
         for action in generateActions(node.emptyCoord):
-            child = applyAction(node,action)
-            child.parent = node
-            result = fLimitedDFS(child,limit)
-            if result[0]:
-                cutoff = result[1]
-            elif result != 'fail':
-                return result
-        if cutoff:
-            return (1,cutoff)
-        else:
-            return 'fail'
+            child = applyAction(node, action)
+            if not path.get(child.state):
+                child.parent = node
+                path[child.state] =1
+                result = fLimitedDFS(child,limit,path)
+                if result[0]:
+                    cutoff = result[1]
+                elif result != 'fail':
+                    return result
+                path.pop(child.state)
+        return (1,cutoff)
 def IDA_star(node):
     limit = node.pathCost
     #print("Calling dfs with ", limit)
+    path = {}
     while True:
-        result = fLimitedDFS(node,limit)
+        #print("Calling dfs with ", limit)
+        path.clear()
+        path[node.state] = 1
+        result = fLimitedDFS(node,limit,path)
         if result == 'fail':
             return 'fail'
         elif result[0] ==0:
             printStates(result[1],True)
             return
+        if result[1] > 31:
+            return 'fail'
         else:
             limit = result[1]
             #print("Calling dfs with ",limit)
@@ -177,9 +183,9 @@ def printStates(node,idastar = False):
     lst = []
     f = None
     if idastar:
-        f = open("outputA.txt", "w+")
-    else:
         f = open("outputIDA.txt", "w+")
+    else:
+        f = open("outputA.txt", "w+")
     while node.parent:
         lst.append(node.state)
         node = node.parent
