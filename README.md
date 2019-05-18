@@ -1,2 +1,2 @@
 # A_star
-Homework for CENG462
+Implementations of A* and IDA*
